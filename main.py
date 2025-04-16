@@ -1,32 +1,39 @@
 import requests
+import collections
 
 def get_text(url):
-    response = requests.get(url)
-    return response.text
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
+        print(f"Ошибка при запросе: {e}")
+        return ""
 
-def count_word_frequencies(url, word):
+def count_word_frequencies(url, words_to_count, case_sensitive=True):
     text = get_text(url)
+    if not text:
+        return {}
+    
+    if not case_sensitive:
+        text = text.lower()
+        words_to_count = [word.lower() for word in words_to_count]
+
     words = text.split()
-    count = 0
-    for w in words:
-        if w == word:
-            count += 1
-    return count
+    
+    counter = collections.Counter(words)
+    
+    frequencies = {word: counter[word] for word in words_to_count}
+    return frequencies
 
 def main():
     words_file = "words.txt"
     url = "https://eng.mipt.ru/why-mipt/"
 
-    words_to_count = []
-    with open(words_file, 'r') as file:
-        for line in file:
-            word = line.strip()
-            if word:
-                words_to_count.append(word)
+    with open(words_file, 'r', encoding='utf-8') as file:
+        words_to_count = [line.strip() for line in file if line.strip()]
 
-    frequencies = {}
-    for word in words_to_count:
-        frequencies[word] = count_word_frequencies(url, word)
+    frequencies = count_word_frequencies(url, words_to_count, case_sensitive=True)
     
     print(frequencies)
 
